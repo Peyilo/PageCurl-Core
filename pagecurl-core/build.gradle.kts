@@ -72,7 +72,7 @@ val verifyCentralPublishing by tasks.registering {
     doLast {
         listOf("mavenCentralUsername", "mavenCentralPassword", "signingInMemoryKey").forEach { key ->
             check(!providers.gradleProperty(key).orNull.isNullOrBlank()) {
-                "Missing $key. See PUBLISHING.md for the required environment variables."
+                "Missing $key. Set the ORG_GRADLE_PROJECT_$key environment variable."
             }
         }
         check(!project.version.toString().endsWith("-SNAPSHOT")) {
