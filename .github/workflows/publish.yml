@@ -1,4 +1,4 @@
-name: Stage Maven Central release
+name: Publish Maven Central release
 
 # Publishing is opt-in. Pushing a commit or tag never uploads a release.
 on:
@@ -8,6 +8,11 @@ on:
         description: Existing release tag matching VERSION_NAME, for example v0.1.0
         required: true
         type: string
+      publish:
+        description: Publish permanently after validation; otherwise only stage
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -55,8 +60,9 @@ jobs:
         run: |
           ./gradlew :pagecurl-core:publishReleasePublicationToLocalRepository :pagecurl-core:lintDebug --no-daemon
           python3 scripts/verify-publication.py
-      - name: Sign and stage the release in Central Portal
+      - name: Sign and upload the release to Central Portal
         env:
+          PUBLISH_RELEASE: ${{ inputs.publish }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
@@ -65,8 +71,18 @@ jobs:
           for variable in ORG_GRADLE_PROJECT_mavenCentralUsername ORG_GRADLE_PROJECT_mavenCentralPassword ORG_GRADLE_PROJECT_signingInMemoryKey ORG_GRADLE_PROJECT_signingInMemoryKeyPassword; do
             [[ -n "${!variable}" ]] || { echo "Missing required secret: $variable" >&2; exit 1; }
           done
-          ./gradlew :pagecurl-core:publishToMavenCentral --no-daemon
+          if [[ "$PUBLISH_RELEASE" == 'true' ]]; then
+            ./gradlew :pagecurl-core:publishAndReleaseToMavenCentral --no-daemon
+          else
+            ./gradlew :pagecurl-core:publishToMavenCentral --no-daemon
+          fi
       - name: Next step
+        env:
+          PUBLISH_RELEASE: ${{ inputs.publish }}
         run: |
-          echo 'Review the validated deployment at https://central.sonatype.com/publishing/deployments' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Click Publish there when ready to make the version permanent.' >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$PUBLISH_RELEASE" == 'true' ]]; then
+            echo 'Automatic publication requested. Check deployment status at https://central.sonatype.com/publishing/deployments' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Review the validated deployment at https://central.sonatype.com/publishing/deployments' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Click Publish there when ready to make the version permanent.' >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -30,11 +30,22 @@ The release AAR is written to `pagecurl-core/build/outputs/aar/pagecurl-core-rel
 
 ## Use the library
 
-Copy the built `pagecurl-core-release.aar` into your Kotlin Android application's `libs` directory, then add it as a dependency:
+Add Maven Central to the consuming project's `settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+```
+
+Add the library to your Android module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation(files("libs/pagecurl-core-release.aar"))
+    implementation("org.peyilo.pagecurl:pagecurl-core:0.1.0")
 }
 ```
 
