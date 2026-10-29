@@ -1,0 +1,10 @@
+Gradle Wrapper
+
+The bundled gradle-wrapper.jar is build tooling from Gradle.
+The configured distribution version is Gradle 8.13.
+
+Project: https://gradle.org/
+Source: https://github.com/gradle/gradle/tree/v8.13.0
+License: Apache License 2.0, reproduced in the adjacent LICENSE file.
+
+This component is separate from the MIT-licensed PageCurl Core library.
