@@ -30,35 +30,13 @@ The release AAR is written to `pagecurl-core/build/outputs/aar/pagecurl-core-rel
 
 ## Use the library
 
-To publish an AAR, source JAR and Maven metadata into this checkout's `build/repository` directory:
-
-```sh
-./gradlew :pagecurl-core:publishReleasePublicationToLocalRepository
-```
-
-Add that directory as a Maven repository in the consuming project's settings, replacing the example path with the location of this checkout:
-
-```kotlin
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url = uri("/path/to/PageCurl-Core/build/repository") }
-    }
-}
-```
-
-Then add the dependency to the Android module:
+Copy the built `pagecurl-core-release.aar` into your Kotlin Android application's `libs` directory, then add it as a dependency:
 
 ```kotlin
 dependencies {
-    implementation("org.peyilo.pagecurl:pagecurl-core:0.1.0")
+    implementation(files("libs/pagecurl-core-release.aar"))
 }
 ```
-
-These coordinates describe the local publication; this setup does not require a Maven Central release.
-
-For Maven Central account setup, domain verification, signing and release staging, see [Publishing](PUBLISHING.md). The release workflow is manual; commits and tags alone do not publish artifacts.
 
 ## Generate a frame
 
