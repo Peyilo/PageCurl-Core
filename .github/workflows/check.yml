@@ -1,0 +1,30 @@
+name: Check library
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4.0.4
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+      - name: Build, document and validate the local publication
+        run: ./gradlew :pagecurl-core:publishReleasePublicationToLocalRepository :pagecurl-core:lintDebug --no-daemon
+      - name: Check release artifacts and metadata
+        run: python3 scripts/verify-publication.py

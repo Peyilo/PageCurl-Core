@@ -1,0 +1,72 @@
+name: Stage Maven Central release
+
+# Publishing is opt-in. Pushing a commit or tag never uploads a release.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag matching VERSION_NAME, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maven-central-release
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check release tag format
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || {
+            echo 'Expected a release tag such as v0.1.0.' >&2
+            exit 1
+          }
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+      - name: Check version and release configuration
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version=$(sed -n 's/^VERSION_NAME=//p' gradle.properties | tr -d '\r')
+          [[ "$RELEASE_TAG" == "v$version" && "$version" != *-SNAPSHOT ]] || {
+            echo 'The tag must match the non-SNAPSHOT VERSION_NAME in its commit.' >&2
+            exit 1
+          }
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4.0.4
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+        with:
+          cache-disabled: true
+      - name: Validate release build without credentials
+        run: |
+          ./gradlew :pagecurl-core:publishReleasePublicationToLocalRepository :pagecurl-core:lintDebug --no-daemon
+          python3 scripts/verify-publication.py
+      - name: Sign and stage the release in Central Portal
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+        run: |
+          for variable in ORG_GRADLE_PROJECT_mavenCentralUsername ORG_GRADLE_PROJECT_mavenCentralPassword ORG_GRADLE_PROJECT_signingInMemoryKey ORG_GRADLE_PROJECT_signingInMemoryKeyPassword; do
+            [[ -n "${!variable}" ]] || { echo "Missing required secret: $variable" >&2; exit 1; }
+          done
+          ./gradlew :pagecurl-core:publishToMavenCentral --no-daemon
+      - name: Next step
+        run: |
+          echo 'Review the validated deployment at https://central.sonatype.com/publishing/deployments' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Click Publish there when ready to make the version permanent.' >> "$GITHUB_STEP_SUMMARY"

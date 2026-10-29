@@ -4,3 +4,7 @@
 **/build/
 *.iml
 /local.properties
+/.secrets/
+*.asc
+*.gpg
+*.key

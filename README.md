@@ -58,6 +58,8 @@ dependencies {
 
 These coordinates describe the local publication; this setup does not require a Maven Central release.
 
+For Maven Central account setup, domain verification, signing and release staging, see [Publishing](PUBLISHING.md). The release workflow is manual; commits and tags alone do not publish artifacts.
+
 ## Generate a frame
 
 ```kotlin
